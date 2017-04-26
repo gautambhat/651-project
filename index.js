@@ -8,7 +8,7 @@ app.get('/', function(req, res){
 
 io.on('connection', function(socket){
     console.log('a user connected');
-    
+
     socket.on('change message', function(msg){
         console.log(msg.id + '::' + msg.string);
         io.emit('change message', msg);
