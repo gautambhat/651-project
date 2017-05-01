@@ -80,11 +80,31 @@
 
 
             function xform(msg1 , msg2 ) {
-                    $('#changes').prepend("xform begin before transformation msg1 " + msg1.string+'\n');
-                    $('#changes').prepend("xform begin before transformation msg2 " + msg2.string+'\n');
-                    if (msg1.op == 'insert' && msg2.op == 'insert') {
-
-                    } else if (msg1.op == 'delete' && msg2.op == 'delete') {
+                    $('#changes').prepend("xform b trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + '\n');
+                    $('#changes').prepend("xform b trfm msg2 op:" + msg2.op + ':pos:' + msg2.pos + '\n');
+                    if (msg1.op === 'noop' || msg2.op === 'noop') {
+                            // no transformation in case of noop
+                            return [msg1,msg2];
+                    }
+                    if (msg1.op === 'insert' && msg2.op === 'insert') {
+                            if (msg1.pos > msg2.pos ) {
+                                    msg1.pos = msg1.pos + 1;
+                            } else if (msg1.pos < msg2.pos) {
+                                    msg2.pos = msg2.pos + 1;
+                            } else {
+                                    // special case when both have the same
+                                    if (msg1.char === msg2.char) {
+                                            msg1.op = 'noop';
+                                            msg2.op = 'noop';
+                                    } else {
+                                            if (msg1.id < msg2.id ) {
+                                                    msg2.pos = msg2.pos+1;
+                                            } else {
+                                                    msg1.pos = msg1.pos+1;
+                                            }
+                                    }
+                            }
+                    } else if (msg1.op === 'delete' && msg2.op === 'delete') {
                             if (msg1.pos > msg2.pos) {
                                     $('#changes').prepend("m1.pos--"+'\n');
                                     msg1.pos = msg1.pos-1;
@@ -98,13 +118,31 @@
                                   msg1.op = 'noop'
                                   msg2.op = 'noop'
                             }
-                    } else if (msg1.op == 'insert' && msg2.op == 'delete') {
-
-                    } if (msg1.op == 'delete' && msg2.op == 'insert') {
-
+                    } else if (msg1.op === 'insert' && msg2.op === 'delete') {
+                            $('#changes').prepend("insert delete case"+'\n');
+                            if (msg1.pos < msg2.pos) {
+                                    $('#changes').prepend("1insert delete case"+'\n');
+                                    msg2.pos = msg2.pos+1;
+                            } else if (msg1.pos > msg2.pos) {
+                                    $('#changes').prepend("2insert delete case"+'\n');
+                                    msg1.pos = msg1.pos-1;
+                            } else {
+                                    $('#changes').prepend("3insert delete case"+'\n');
+                                    msg2.pos = msg2.pos+1;
+                                    msg1.pos = msg1.pos-1;
+                            }
+                    } if (msg1.op === 'delete' && msg2.op === 'insert') {
+                            if (msg1.pos < msg2.pos) {
+                                    msg2.pos = msg2.pos-1;
+                            } else if (msg1.pos > msg2.pos) {
+                                    msg1.pos = msg1.pos+1;
+                            } else {
+                                    msg2.pos = msg2.pos-1;
+                                    msg1.pos = msg1.pos+1;
+                            }
                     }
-                    $('#changes').prepend("xform after transformation msg1 " + msg1.string+'\n');
-                    $('#changes').prepend("xform after transformation msg2 " + msg2.string+'\n');
+                    $('#changes').prepend("xform a trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + '\n');
+                    $('#changes').prepend("xform a trfm msg1 op:" + msg2.op + ':pos:' + msg2.pos + '\n');
                     return [msg1,msg2];
             }
 

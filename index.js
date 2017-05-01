@@ -12,10 +12,10 @@ io.on('connection', function(socket){
     socket.on('change message', function(msg){
         console.log(msg.id + '::' + msg.string);
         // @aalvad
-        setTimeout(function(){
-                console.log("emit executes")
-                io.emit('change message', msg);
-        }, 10000);
+        //setTimeout(function(){
+                //console.log("emit executes")
+        io.emit('change message', msg);
+        //}, 10000);
     });
     socket.on('disconnect', function() {
         console.log('user disconnected');
