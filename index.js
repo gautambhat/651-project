@@ -1,6 +1,8 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+//var outqueue1 = []
+//var outqueue2 = []
 // comment
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
@@ -11,9 +13,9 @@ io.on('connection', function(socket){
 
     socket.on('change message', function(msg){
         console.log(msg.id + '::' + msg.string);
-        // @aalvad
+        //@aalvad
         //setTimeout(function(){
-                //console.log("emit executes")
+                console.log("emit executes");
         io.emit('change message', msg);
         //}, 10000);
     });

@@ -27,6 +27,7 @@
             var myseq = 0;
             var otherseq = 0;
             var socket = io();
+            var idstring = ""
             var outqueue = [];
             var input = document.getElementById('textarea');
             // helper function
@@ -46,17 +47,23 @@
                   return;
                 }
                 var msg = {};
-                $('#changes').prepend('on input() : oldVal:' + oldVal + '\n');
-                $('#changes').prepend('on input() : currentVal:' + currentVal + '\n');
+                if (idstring === "") {
+                        idstring = socket.id
+                        $('#changes').prepend("set init id to: " + idstring + '\n');
+                }
+                //$('#changes').prepend('on input() : oldVal:' + oldVal + '\n');
+                //$('#changes').prepend('on input() : currentVal:' + currentVal + '\n');
               	if (currentVal.length < oldVal.length ) {
-                      msg = {'id':socket.id, 'myseq':myseq, 'otherseq':otherseq, 'op':'delete', 'char':oldVal.charAt(start), 'pos':start, 'string': 'deleted ' + oldVal.charAt(start) + ' at pos ' + (start)};
-                } else msg = {'id':socket.id, 'myseq':myseq, 'otherseq':otherseq, 'op':'insert', 'char':currentVal.charAt(start-1), 'pos':(start-1), 'string': 'inserted '+currentVal.charAt(start-1)+' at pos '+ (start-1)};
+                      msg = {'initid':idstring,'id':socket.id, 'myseq':myseq, 'otherseq':otherseq, 'op':'delete', 'char':oldVal.charAt(start), 'pos':start, 'string': 'deleted ' + oldVal.charAt(start) + ' at pos ' + (start)};
+              } else msg = {'initid':idstring,'id':socket.id, 'myseq':myseq, 'otherseq':otherseq, 'op':'insert', 'char':currentVal.charAt(start-1), 'pos':(start-1), 'string': 'inserted '+currentVal.charAt(start-1)+' at pos '+ (start-1)};
                 outqueue.push(msg);
                 myseq = myseq+1;
                 oldVal = currentVal;
                 $('#changes').prepend(msg.id+'::myseq'+msg.myseq+'::otherseq'+msg.otherseq+': '+msg.string+'\n');
                 //$('#changes').prepend(outqueue.length+'\n');
+                //$('#changes').prepend('before emit + msg.myMsg' + msg.myseq);
                 socket.emit('change message', msg);
+                //$('#changes').prepend('after emit' + msg.myseq);
             });
 
 
@@ -74,14 +81,14 @@
                         input.setSelectionRange(textPos+1, textPos+1);
                       } else input.setSelectionRange(textPos, textPos);
                     }
-                    oldVal = $('#textarea').val();
+                    oldVal = input.value;
                     $('#changes').prepend(msg.id+'::myseq'+msg.myseq+'::otherseq'+msg.otherseq+': '+msg.string+'\n');
             }
 
 
             function xform(msg1 , msg2 ) {
-                    $('#changes').prepend("xform b trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + '\n');
-                    $('#changes').prepend("xform b trfm msg2 op:" + msg2.op + ':pos:' + msg2.pos + '\n');
+                    $('#changes').prepend("xform b trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + ':char:'+ msg1.char +'\n');
+                    $('#changes').prepend("xform b trfm msg2 op:" + msg2.op + ':pos:' + msg2.pos + ':char:'+ msg1.char + '\n');
                     if (msg1.op === 'noop' || msg2.op === 'noop') {
                             // no transformation in case of noop
                             return [msg1,msg2];
@@ -92,17 +99,12 @@
                             } else if (msg1.pos < msg2.pos) {
                                     msg2.pos = msg2.pos + 1;
                             } else {
-                                    // special case when both have the same
-                                    if (msg1.char === msg2.char) {
-                                            msg1.op = 'noop';
-                                            msg2.op = 'noop';
+                                    if (msg1.initid < msg2.initid ) {
+                                            msg2.pos = msg2.pos+1;
                                     } else {
-                                            if (msg1.id < msg2.id ) {
-                                                    msg2.pos = msg2.pos+1;
-                                            } else {
-                                                    msg1.pos = msg1.pos+1;
-                                            }
+                                            msg1.pos = msg1.pos+1;
                                     }
+
                             }
                     } else if (msg1.op === 'delete' && msg2.op === 'delete') {
                             if (msg1.pos > msg2.pos) {
@@ -141,8 +143,8 @@
                                     msg1.pos = msg1.pos+1;
                             }
                     }
-                    $('#changes').prepend("xform a trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + '\n');
-                    $('#changes').prepend("xform a trfm msg1 op:" + msg2.op + ':pos:' + msg2.pos + '\n');
+                    $('#changes').prepend("xform a trfm msg1 op:" + msg1.op + ':pos:' + msg1.pos + ':char:'+ msg1.char+ '\n');
+                    $('#changes').prepend("xform a trfm msg1 op:" + msg2.op + ':pos:' + msg2.pos + ':char:'+ msg1.char+ '\n');
                     return [msg1,msg2];
             }
 
@@ -162,6 +164,8 @@
                       $('#changes').prepend(outqueue[i].myseq+ " < " + msg.otherseq + '\n' );
                       if (outqueue[i].myseq < msg.otherseq) {
                               synchronized++;
+                      } else {
+                              break;
                       }
               }
                $('#changes').prepend("Length of synchronized" + synchronized + '\n');
@@ -173,7 +177,7 @@
                       msg = transformed[0];
                       outqueue[i] = transformed[1];
               }
-              $('#changes').prepend('received after transformation:'+ msg.id+'::myseq'+msg.myseq+'::otherseq'+msg.otherseq+': '+msg.string+'\n');
+              $('#changes').prepend('received after transformation:'+ msg.id+'::myseq'+msg.myseq+'::otherseq'+msg.otherseq + ':char:'+ msg.char+ ':pos' + msg.pos + msg.string+'\n');
               if (msg.op != 'noop') {
                       otherseq = otherseq+1;
                       apply(msg);
